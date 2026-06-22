@@ -1,0 +1,3 @@
+# Скрипти для Linux-контейнера завжди з LF
+*.sh text eol=lf
+docker-entrypoint.sh text eol=lf

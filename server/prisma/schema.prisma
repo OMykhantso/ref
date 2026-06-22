@@ -1,0 +1,145 @@
+// Prisma schema — фінанси малого бізнесу
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  OWNER // Власник — повний доступ
+  ACCOUNTANT // Бухгалтер — транзакції + звіти
+  MANAGER // Менеджер — транзакції + загальний баланс
+}
+
+enum Currency {
+  UAH
+  USD
+  EUR
+}
+
+enum AccountType {
+  CASH // каса / готівка
+  BANK // банк / рахунок
+  CARD // картка
+}
+
+enum TxType {
+  INCOME // дохід
+  EXPENSE // витрата
+}
+
+enum PaymentMethod {
+  CASH // готівка
+  CARD // картка
+  ACCOUNT // рахунок
+}
+
+enum RateSource {
+  MANUAL // введено вручну
+  NBU // підтягнуто з API НБУ
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  role         Role     @default(MANAGER)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  transactions Transaction[]
+  auditLogs    AuditLog[]
+}
+
+model Account {
+  id        String      @id @default(cuid())
+  name      String
+  type      AccountType
+  currency  Currency
+  // початковий залишок у валюті рахунку
+  opening   Decimal     @default(0) @db.Decimal(18, 2)
+  isArchived Boolean    @default(false)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  transactions Transaction[]
+}
+
+model Category {
+  id        String   @id @default(cuid())
+  name      String
+  type      TxType
+  color     String?  @default("#64748b")
+  isArchived Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  transactions Transaction[]
+
+  @@unique([name, type])
+}
+
+model Transaction {
+  id            String        @id @default(cuid())
+  type          TxType
+  amount        Decimal       @db.Decimal(18, 2) // у валюті транзакції
+  currency      Currency
+  rateToBase    Decimal       @db.Decimal(18, 6) // курс до UAH на дату
+  amountBase    Decimal       @db.Decimal(18, 2) // amount * rateToBase (UAH)
+  date          DateTime
+  description   String?
+  paymentMethod PaymentMethod
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  account     Account  @relation(fields: [accountId], references: [id])
+  accountId   String
+  category    Category @relation(fields: [categoryId], references: [id])
+  categoryId  String
+  createdBy   User     @relation(fields: [createdById], references: [id])
+  createdById String
+
+  @@index([date])
+  @@index([type])
+  @@index([createdById])
+}
+
+model ExchangeRate {
+  id        String     @id @default(cuid())
+  currency  Currency
+  date      DateTime // дата дії курсу (нормалізована до 00:00)
+  rate      Decimal    @db.Decimal(18, 6) // скільки UAH за 1 одиницю валюти
+  source    RateSource @default(MANUAL)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@unique([currency, date])
+  @@index([date])
+}
+
+model AuditLog {
+  id        String      @id @default(cuid())
+  entity    String // напр. "Transaction"
+  entityId  String
+  action    AuditAction
+  before    Json?
+  after     Json?
+  createdAt DateTime    @default(now())
+
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
+
+  @@index([entity, entityId])
+  @@index([createdAt])
+}

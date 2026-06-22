@@ -1,0 +1,16 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: biz-finance-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: biz
+      POSTGRES_PASSWORD: biz_pass
+      POSTGRES_DB: biz_finance
+    ports:
+      - "5432:5432"
+    volumes:
+      - biz_pgdata:/var/lib/postgresql/data
+
+volumes:
+  biz_pgdata:
