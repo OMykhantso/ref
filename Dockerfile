@@ -1,5 +1,5 @@
 # --- Етап 1: збірка фронтенду ---
-FROM node:20-alpine AS client
+FROM node:20-slim AS client
 WORKDIR /app/client
 COPY client/package*.json ./
 RUN npm install
@@ -7,8 +7,12 @@ COPY client/ ./
 RUN npm run build
 
 # --- Етап 2: сервер + зібраний фронтенд ---
-FROM node:20-alpine AS server
+FROM node:20-slim AS server
 WORKDIR /app/server
+
+# OpenSSL потрібен Prisma (інакше schema engine не стартує)
+RUN apt-get update -y && apt-get install -y --no-install-recommends openssl \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY server/package*.json ./
 RUN npm install
