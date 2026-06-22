@@ -6,8 +6,8 @@ import { Button, Input, Card } from '../components/ui/index.jsx';
 export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
-  const [email, setEmail] = useState('owner@biz.local');
-  const [password, setPassword] = useState('owner12345');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -41,9 +41,6 @@ export default function Login() {
             {loading ? 'Вхід…' : 'Увійти'}
           </Button>
         </form>
-        <p className="mt-4 text-center text-xs text-slate-400">
-          Тестові акаунти створюються командою seed
-        </p>
       </Card>
     </div>
   );
